@@ -43,14 +43,18 @@ On first launch the app presents two options:
 
 **Admin Machine:**
 - Enter mosque ID
+- App fetches mosque's Syncthing device IDs from GitHub JSON
+- App silently configures Syncthing with those peer device IDs
 - App starts in full admin dashboard mode
 - Sees all data scoped to that mosque ID
 
 ### Syncthing Setup
-- Developer configures Syncthing on every machine (display and admin) during the setup visit
-- Admin cannot do this themselves — it is the one manual step per mosque
-- If admin gets a new laptop, a brief remote/in-person session is needed to reconfigure Syncthing
-- After initial setup, admin is fully independent
+- Developer configures Syncthing manually on all display machines during setup visit
+- Developer notes each display machine's Syncthing device ID and adds to GitHub JSON file
+- Admin machine auto-configures Syncthing on first launch using the GitHub JSON
+- Admin never touches Syncthing UI
+- At least one display machine is always on per mosque (dedicated 24/7 hardware) — this guarantees the admin machine always has a peer to connect to
+- If admin gets a new laptop, they just run the app and enter mosque ID — auto-configures again
 
 ---
 
@@ -70,6 +74,22 @@ On first launch the app presents two options:
 - Runs PostgreSQL + FastAPI
 - Machines interact with it via JSON API calls (similar to how they call Aladhan)
 - Handles all mosques and all years in one DB — data is small (timestamps only), easily handles 1000+ mosques across multiple years
+
+### Mock Server (Early Development)
+- Before the server is built, a `prayer_times.xlsx` file in the sync folder acts as the data source
+- App reads/writes Excel instead of calling the API
+- A clean abstraction layer separates data access so swapping Excel → real server requires changing one line:
+
+```python
+class DataSource:
+    def get_prayer_times(self, date): ...
+    def save_prayer_times(self, data): ...
+
+class ExcelDataSource(DataSource): ...   # reads/writes Excel file
+class ServerDataSource(DataSource): ...  # calls FastAPI server
+```
+
+- Display machines treat the Excel file as read-only during development
 
 ### Key API Endpoints (conceptual)
 ```
@@ -204,12 +224,31 @@ POST /heartbeat                                    ← machine reports health st
 ```
 C:/waqt/sync/
   ├── config.json        ← machine roles, names
+  ├── prayer_times.xlsx  ← mock server data (early development only)
   └── announcements/     ← images and slides
 ```
 
-- Config and prayer data are NOT synced via Syncthing — they come from the central server
+- Config and prayer data are NOT synced via Syncthing in production — they come from the central server
 - Conflict resolution: last-write-wins
-- Option to move to auto-configured Syncthing with server relay in the future without changing app code
+- Display machines treat Excel file as read-only
+
+### Syncthing Device Registry (GitHub JSON)
+- A read-only public JSON file hosted on GitHub contains Syncthing device IDs per mosque
+- Developer manually updates this file during setup visits
+- Admin machines fetch this file on first launch to auto-configure Syncthing peers
+- Multiple device IDs stored per mosque for redundancy
+
+```json
+{
+  "mosque_001": {
+    "folder_id": "mosque_001",
+    "device_ids": ["ABCDEF-GHIJKL-...", "MNOPQR-STUVWX-..."]
+  }
+}
+```
+
+- No write access needed — developer maintains the file manually
+- Display machines are always-on, guaranteeing at least one peer is always available
 
 ### Startup Sequence
 1. Syncthing starts and syncs latest files

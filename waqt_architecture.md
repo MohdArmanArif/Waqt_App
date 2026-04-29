@@ -355,7 +355,18 @@ Built into the app itself. Opened when app is configured as an admin machine. St
 
 ---
 
-## 13. Open / Unresolved Items
+## 13. Display Fonts
+
+Both fonts are preinstalled on Windows 10 — no font files need to be bundled with the app.
+
+| Font | Use |
+|---|---|
+| **Bahnschrift** | Time numbers, countdowns — modern, geometric, fixed-width feel |
+| **Segoe UI** | Labels, prayer names, UI text — clean, highly readable |
+
+---
+
+## 14. Open / Unresolved Items
 
 - Exact PostgreSQL schema
 - Map picker implementation for lat/lon in admin UI

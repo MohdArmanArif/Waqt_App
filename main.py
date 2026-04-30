@@ -5,8 +5,7 @@ from PyQt6.QtGui import QColor
 from datetime import datetime
 
 from local import load_config
-from db_source import get_prayer_times
-
+from data_source import ExcelDataSource
 
 class MainWindow(QMainWindow):
     def __init__(self, config, prayer_times):
@@ -149,7 +148,8 @@ if __name__ == "__main__":
     print("Config loaded:", config)
 
     # Load today's prayer times from the Excel database
-    prayer_times = get_prayer_times()
+    data_source = ExcelDataSource()
+    prayer_times = data_source.get_prayer_times()
     print("Prayer times loaded:", prayer_times)
 
     app = QApplication(sys.argv)

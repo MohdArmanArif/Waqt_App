@@ -1,0 +1,18 @@
+{
+  "mosque_name": "Dawah Centre",
+  "latitude": 43.659588,
+  "longitude": -79.436984,
+  "timezone": "America/Toronto",
+  "method": 15,
+  "school": 0,
+  "shafaq": "ahmer",
+  "tune": "0,0,0,0,0,0,0,0,0",
+  "midnight_mode": 0,
+  "iqamah": {
+    "Fajr":    { "min": 30, "max": 45, "round": 5 },
+    "Dhuhr":   { "min": 25, "max": 40, "round": 5 },
+    "Asr":     { "min": 30, "max": 45, "round": 5 },
+    "Maghrib": { "min": 5,  "max": 10, "round": 5 },
+    "Isha":    { "min": 30, "max": 45, "round": 5 }
+  }
+}

@@ -1,0 +1,57 @@
+import os
+import pandas as pd
+from datetime import date
+from al_adhan import get_yearly_start_time
+
+# Path to the Excel file in the sync folder, relative to this script.
+# Built dynamically so it works regardless of where the app is launched from.
+DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "sync", "prayer_db.xlsx")
+
+# Get the current year once at startup — used to check if the database is up to date
+current_year = date.today().year
+
+
+def check_db():
+    # Define the expected column structure for the database.
+    # Any missing columns will be filled with empty strings when writing.
+    COLUMNS = ["Date", "Hijri",
+               "Fajr_Start", "Fajr_Iqamah",
+               "Sunrise",
+               "Dhuhr_Start", "Dhuhr_Iqamah",
+               "Asr_Start", "Asr_Iqamah",
+               "Maghrib_Start", "Maghrib_Iqamah",
+               "Isha_Start", "Isha_Iqamah"]
+
+    # If the file doesn't exist at all, create it with just the headers
+    if not os.path.exists(DB_PATH):
+        print("[db_manager] Database file not found, initializing")
+        df = pd.DataFrame(columns=COLUMNS)
+        df.to_excel(DB_PATH, index=False)
+
+    # Read the existing database
+    db_data = pd.read_excel(DB_PATH, dtype=str)
+
+    if db_data.empty:
+        # Database exists but has no data — fetch last year, this year, and next year
+        print("[db_manager] Database file empty, initializing")
+        full_df = pd.concat([pd.DataFrame(get_yearly_start_time(current_year - 1)),
+                             pd.DataFrame(get_yearly_start_time(current_year)),
+                             pd.DataFrame(get_yearly_start_time(current_year + 1))], ignore_index=True)
+
+        # Reindex to match the full column structure, filling iqamah columns with ""
+        full_df.reindex(columns=COLUMNS, fill_value="").to_excel(DB_PATH, index=False)
+
+    elif db_data.iloc[-1, 0].split("-")[0] == str(current_year):
+        # The last row in the database belongs to the current year,
+        # meaning next year's data hasn't been loaded yet — add it now
+        print("[db_manager] Next year data missing, adding")
+        full_df = pd.concat([db_data,
+                             pd.DataFrame(get_yearly_start_time(current_year + 1)).reindex(columns=COLUMNS, fill_value="")],
+                            ignore_index=True)
+        full_df.to_excel(DB_PATH, index=False)
+
+    return
+
+
+if __name__ == "__main__":
+    check_db()

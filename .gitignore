@@ -227,3 +227,6 @@ $RECYCLE.BIN/
 
 # Cursor IDE
 .cursor/
+
+# Excel
+~$*

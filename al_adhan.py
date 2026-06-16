@@ -34,6 +34,7 @@ def parse_year(data):
 
             days_parsed.append({
                 "Date":         date,
+                "Weekday":      day['date']['gregorian']['weekday']['en'],
                 "Hijri":        hijri_date,
                 "Fajr_Start":   timings['Fajr'].split()[0],
                 "Sunrise":      timings['Sunrise'].split()[0],
@@ -71,6 +72,7 @@ def get_yearly_start_time(year):
         },
         timeout=1
     )
+
     # Parse the raw JSON response into a clean list of dicts
     parsed_data = parse_year(response.json())
     return parsed_data

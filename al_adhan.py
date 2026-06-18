@@ -35,7 +35,6 @@ def parse_year(data):
             days_parsed.append({
                 "Date":         date,
                 "Weekday":      day['date']['gregorian']['weekday']['en'],
-                "Hijri":        hijri_date,
                 "Fajr_Start":   timings['Fajr'].split()[0],
                 "Sunrise":      timings['Sunrise'].split()[0],
                 "Dhuhr_Start":  timings['Dhuhr'].split()[0],
@@ -79,6 +78,7 @@ def get_yearly_start_time(year):
 
 
 if __name__ == "__main__":
+    
     # Run this file directly to test the API call and parser
     response = get_yearly_start_time(2026)
     print(response)

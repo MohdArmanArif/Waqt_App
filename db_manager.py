@@ -27,7 +27,7 @@ def yearly_time_df(year):
     # Define the expected column structure for the database.
     # Iqamah columns are included here so every row has a slot for them,
     # even though they start empty and are filled later by the iqamah calculator.
-    COLUMNS = ["Date", "Weekday", "Hijri",
+    COLUMNS = ["Date", "Weekday",
                "Fajr_Start", "Fajr_Iqamah",
                "Sunrise",
                "Dhuhr_Start", "Dhuhr_Iqamah",

@@ -71,12 +71,14 @@ def check_db():
 
     elif db_data.iloc[-1, 0].split("-")[0] == str(current_year):
         # The last row in the database belongs to the current year,
-        # meaning next year's data hasn't been loaded yet — add it now
+        # fetch last year, this year, and next year
         print("[db_manager] Next year data missing, adding")
-        full_df = pd.concat([db_data,
+        full_df = pd.concat([yearly_time_df(current_year - 1),
+                             yearly_time_df(current_year),
                              yearly_time_df(current_year + 1)], ignore_index=True)
         full_df.to_excel(DB_PATH, index=False)
 
+    print("[db_manager] Database up to date")
     return
 
 

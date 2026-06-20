@@ -47,7 +47,12 @@ def nearest_time(waqt, interval, min):
     return iqamah_time
 
 def db_iqamah_calc(db_data):
-    return
+    db_data["Fajr_Iqamah"] = db_data["Fajr_Start"].apply(lambda t: nearest_time(t, 15, 30))
+    db_data["Dhuhr_Iqamah"] = db_data["Dhuhr_Start"].apply(lambda t: nearest_time(t, 15, 45))
+    db_data["Asr_Iqamah"] = db_data["Asr_Start"].apply(lambda t: nearest_time(t, 15, 30))
+    db_data["Maghrib_Iqamah"] = db_data["Maghrib_Start"].apply(lambda t: nearest_time(t, 1, 0))
+    db_data["Isha_Iqamah"] = db_data["Isha_Start"].apply(lambda t: nearest_time(t, 15, 30))
+    return db_data
 
 if __name__ == "__main__":
     print(nearest_time("18:31", 15, 15))

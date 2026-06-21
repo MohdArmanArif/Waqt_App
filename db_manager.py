@@ -84,6 +84,7 @@ def check_db():
 
 
 if __name__ == "__main__":
+    check_db()
     db_data = pd.read_excel(DB_PATH, dtype=str)
     db_data = db_iqamah_calc(db_data)
     db_data.to_excel(DB_PATH, index=False)

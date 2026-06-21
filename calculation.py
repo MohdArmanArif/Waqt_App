@@ -47,11 +47,15 @@ def nearest_time(waqt, interval, min):
     return iqamah_time
 
 def db_iqamah_calc(db_data):
-    db_data["Fajr_Iqamah"] = db_data["Fajr_Start"].apply(lambda t: nearest_time(t, 15, 30))
-    db_data["Dhuhr_Iqamah"] = db_data["Dhuhr_Start"].apply(lambda t: nearest_time(t, 15, 45))
-    db_data["Asr_Iqamah"] = db_data["Asr_Start"].apply(lambda t: nearest_time(t, 15, 30))
-    db_data["Maghrib_Iqamah"] = db_data["Maghrib_Start"].apply(lambda t: nearest_time(t, 1, 0))
-    db_data["Isha_Iqamah"] = db_data["Isha_Start"].apply(lambda t: nearest_time(t, 15, 30))
+    for index, row in db_data.iterrows():
+        if index == 0 or row["Weekday"] in change_days:
+            db_data.at[index, "Fajr_Iqamah"] = nearest_time(row["Fajr_Start"], 15, 30)
+            db_data.at[index, "Dhuhr_Iqamah"] = nearest_time(row["Dhuhr_Start"], 15, 30)
+            db_data.at[index, "Asr_Iqamah"] = nearest_time(row["Asr_Start"], 15, 30)
+            db_data.at[index, "Maghrib_Iqamah"] = nearest_time(row["Maghrib_Start"], 15, 30)
+            db_data.at[index, "Isha_Iqamah"] = nearest_time(row["Isha_Start"], 15, 30)
+    columns = ["Fajr_Iqamah", "Dhuhr_Iqamah", "Asr_Iqamah", "Maghrib_Iqamah", "Isha_Iqamah"]
+    db_data[columns] = db_data[columns].ffill()
     return db_data
 
 if __name__ == "__main__":

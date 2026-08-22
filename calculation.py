@@ -42,8 +42,8 @@ def interval_round(time, interval):
 
     return f"{hours:02d}:{mins:02d}"
 
-def nearest_time(waqt, interval, min):
-    iqamah_time = interval_round(time_math(waqt, min), interval)
+def nearest_time(waqt, interval, min_offset):
+    iqamah_time = interval_round(time_math(waqt, min_offset), interval)
     return iqamah_time
 
 def db_iqamah_calc(db_data):

@@ -1,0 +1,8 @@
+For now hardcoded change day is Saturday but can accept any and as many days
+prayer offsets and intervals hardcoded for each waqt
+iterates over full last year, this year, next year list
+
+Next provide variable offsets and intervals
+allow passthrough of some date intervals for recalc using diff offsets and intervals
+allow friday prayer functionality
+make frontend

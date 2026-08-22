@@ -47,6 +47,8 @@ def nearest_time(waqt, interval, min_offset):
     return iqamah_time
 
 def iqamah_calc(db_data):
+    columns = ["Fajr_Iqamah", "Dhuhr_Iqamah", "Asr_Iqamah", "Maghrib_Iqamah", "Isha_Iqamah"]
+    db_data[columns] = None
     for index, row in db_data.iterrows():
         if index == 0 or row["Weekday"] in change_days:
             db_data.at[index, "Fajr_Iqamah"] = nearest_time(row["Fajr_Start"], 15, 30)
@@ -54,7 +56,6 @@ def iqamah_calc(db_data):
             db_data.at[index, "Asr_Iqamah"] = nearest_time(row["Asr_Start"], 15, 30)
             db_data.at[index, "Maghrib_Iqamah"] = nearest_time(row["Maghrib_Start"], 15, 30)
             db_data.at[index, "Isha_Iqamah"] = nearest_time(row["Isha_Start"], 15, 30)
-    columns = ["Fajr_Iqamah", "Dhuhr_Iqamah", "Asr_Iqamah", "Maghrib_Iqamah", "Isha_Iqamah"]
     db_data[columns] = db_data[columns].ffill()
     return db_data
 

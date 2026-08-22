@@ -69,6 +69,7 @@ def check_db():
                              yearly_time_df(current_year),
                              yearly_time_df(current_year + 1)], ignore_index=True)
         full_df.to_excel(DB_PATH, index=False)
+        calc_iqamah(pd.read_excel(DB_PATH, dtype=str))
 
     elif db_data.iloc[-1, 0].split("-")[0] != str(current_year + 1):
         # The last row in the database belongs to the current year,
@@ -78,13 +79,23 @@ def check_db():
         full_df = pd.concat([db_data[~db_data["Date"].str.startswith(str(outdated_year))],
                              yearly_time_df(current_year + 1)], ignore_index=True)
         full_df.to_excel(DB_PATH, index=False)
+        calc_iqamah(pd.read_excel(DB_PATH, dtype=str))
 
     print("[db_manager] Database up to date")
     return
 
 
-def calc_iqamah():
-    db_data = pd.read_excel(DB_PATH, dtype=str)
+def calc_iqamah(db_data):
+    """
+    Runs the iqamah calculator over the provided DataFrame and writes
+    the results back to the Excel file.
+
+    Args:
+        db_data (DataFrame): The full prayer times database, freshly read
+                             from Excel and passed in by the caller to avoid
+                             reading the file twice.
+    """
+
     db_data = iqamah_calc(db_data)
     db_data.to_excel(DB_PATH, index=False)
     print("[db_manager] Iqamah times calculated and added to database")
@@ -92,4 +103,3 @@ def calc_iqamah():
 
 if __name__ == "__main__":
     check_db()
-    calc_iqamah()

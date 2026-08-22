@@ -2,7 +2,7 @@ import os
 import pandas as pd
 from datetime import date
 from al_adhan import get_yearly_start_time
-from calculation import db_iqamah_calc
+from calculation import iqamah_calc
 
 # Path to the Excel file in the sync folder, relative to this script.
 # Built dynamically so it works regardless of where the app is launched from.
@@ -83,8 +83,13 @@ def check_db():
     return
 
 
+def calc_iqamah():
+    db_data = pd.read_excel(DB_PATH, dtype=str)
+    db_data = iqamah_calc(db_data)
+    db_data.to_excel(DB_PATH, index=False)
+    print("[db_manager] Iqamah times calculated and added to database")
+
+
 if __name__ == "__main__":
     check_db()
-    db_data = pd.read_excel(DB_PATH, dtype=str)
-    db_data = db_iqamah_calc(db_data)
-    db_data.to_excel(DB_PATH, index=False)
+    calc_iqamah()

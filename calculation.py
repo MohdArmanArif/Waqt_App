@@ -46,7 +46,7 @@ def nearest_time(waqt, interval, min_offset):
     iqamah_time = interval_round(time_math(waqt, min_offset), interval)
     return iqamah_time
 
-def db_iqamah_calc(db_data):
+def iqamah_calc(db_data):
     for index, row in db_data.iterrows():
         if index == 0 or row["Weekday"] in change_days:
             db_data.at[index, "Fajr_Iqamah"] = nearest_time(row["Fajr_Start"], 15, 30)

@@ -30,6 +30,36 @@ def get_today_prayer_times():
     return row.iloc[0].to_dict()
 
 
+def get_next_iqamah_change(today):
+    """
+    Reads the database and returns the first future row where any iqamah
+    time differs from today's iqamah times.
+
+    Args:
+        today (dict): Today's prayer times row as a dict.
+
+    Returns:
+        dict: The first row with a different iqamah time, or None if no change found.
+    """
+    # Read the database directly — no need to pass it in from outside
+    db_data = pd.read_excel(DB_PATH, dtype=str)
+
+    # The five iqamah columns we want to compare
+    iqamah_columns = ["Fajr_Iqamah", "Dhuhr_Iqamah", "Asr_Iqamah", "Isha_Iqamah"]
+
+    # Only look at rows after today
+    future_rows = db_data[db_data["Date"] > TODAY]
+
+    for _, row in future_rows.iterrows():
+        # Check if any iqamah time in this row differs from today's
+        for col in iqamah_columns:
+            if row[col] != today[col]:
+                return row.to_dict()
+
+    # No change found within the database
+    return None
+
+
 if __name__ == "__main__":
 
     # Step 1 — Ensure the database exists and is up to date before anything else
@@ -44,8 +74,10 @@ if __name__ == "__main__":
         print("[main] Could not load prayer times — exiting")
         sys.exit(1)
 
+    next_change = get_next_iqamah_change(prayer_times)
+
     # Step 3 — Launch the display window
     app = QApplication(sys.argv)
-    window = DisplayWindow(prayer_times)
+    window = DisplayWindow(prayer_times, next_change)
     window.show()
     sys.exit(app.exec())

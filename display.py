@@ -42,7 +42,7 @@ class DisplayWindow(QMainWindow):
     it never reads from disk or calls any APIs itself.
     """
 
-    def __init__(self, prayer_times):
+    def __init__(self, prayer_times, next_change=None):
         """
         Args:
             prayer_times (dict): Today's row from the database.
@@ -50,7 +50,9 @@ class DisplayWindow(QMainWindow):
         super().__init__()
         self.setWindowTitle("Waqt")
         self.setMinimumSize(1280, 720)
+        self.showFullScreen()
         self.prayer_times = prayer_times
+        self.next_change = next_change
 
         # The five daily prayers to display, in order
         self.prayers = ["Fajr", "Dhuhr", "Asr", "Maghrib", "Isha"]
@@ -73,14 +75,16 @@ class DisplayWindow(QMainWindow):
 
         # ── Prayer times table ────────────────────────────────────────────────────
         prayer_table = self._build_prayer_table()
+        jumuah_table = self._build_jumuah_table()
 
         # ── Main layout — clock on top, table below ───────────────────────────────
         layout = QVBoxLayout()
         layout.setContentsMargins(60, 40, 60, 40)
-        layout.setSpacing(20)
+        layout.setSpacing(10)
         layout.addWidget(self.clock_label)
         layout.addWidget(prayer_table)
         layout.addStretch()
+        layout.addWidget(jumuah_table)
 
         container = QWidget()
         container.setLayout(layout)
@@ -93,47 +97,43 @@ class DisplayWindow(QMainWindow):
         self.update_clock()
 
     def _build_prayer_table(self):
-        """
-        Builds the prayer times table as a widget.
-        Each row shows the prayer name, start time, and iqamah time.
-
-        Returns:
-            QWidget: The fully constructed table widget.
-        """
-        # The table is a vertical stack of rows
         table_layout = QVBoxLayout()
         table_layout.setSpacing(8)
 
-        # Header row
-        header = self._build_row("Prayer", "Start", "Iqamah", is_header=True)
+        # Build the header — third column shows the date of the next iqamah change
+        next_change_date = self.next_change["Date"] if self.next_change else "--"
+        header = self._build_row("Prayer", "Start", "Iqamah", next_change_date, is_header=True)
         table_layout.addWidget(header)
 
-        # One row per prayer
         for prayer in self.prayers:
             start = self.prayer_times.get(f"{prayer}_Start", "--:--")
             iqamah = self.prayer_times.get(f"{prayer}_Iqamah", "--:--")
-            row = self._build_row(prayer, start, iqamah)
+
+            # Get the upcoming iqamah time for this prayer, falls back to "--:--" if not found
+            upcoming = self.next_change.get(f"{prayer}_Iqamah", "--:--") if self.next_change else "--:--"
+
+            row = self._build_row(prayer, start, iqamah, upcoming)
             table_layout.addWidget(row)
 
         table_widget = QWidget()
         table_widget.setLayout(table_layout)
         return table_widget
 
-    def _build_row(self, prayer, start, iqamah, is_header=False):
+    def _build_row(self, prayer, start, iqamah, upcoming="", is_header=False):
         """
         Builds a single row in the prayer table.
 
         Args:
-            prayer (str): Prayer name e.g. 'Fajr'
+            prayer (str): Prayer name or column header e.g. 'Fajr'
             start (str): Adhan start time e.g. '06:25'
             iqamah (str): Iqamah time e.g. '07:00'
-            is_header (bool): If True, styles the row as a header.
+            upcoming (str): Upcoming iqamah time or date for the next change column
+            is_header (bool): If True, styles the row as a header with two-line upcoming column
 
         Returns:
             QWidget: A single table row widget.
         """
-        # Font size and weight differ between header and data rows
-        font_size = "25px" if is_header else "28px"
+        font_size = "25px" if is_header else "25px"
         font_weight = "bold" if is_header else "normal"
         font_role = "ui" if is_header else "numeric"
 
@@ -149,18 +149,40 @@ class DisplayWindow(QMainWindow):
         start_label = QLabel(start)
         iqamah_label = QLabel(iqamah)
 
-        # Center-align the time columns
         start_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         iqamah_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
         for label in [prayer_label, start_label, iqamah_label]:
             label.setStyleSheet(style)
 
-        # Three columns side by side
+        if is_header:
+            # Header upcoming column shows "From" on top and the date below
+            from_label = QLabel("From")
+            date_label = QLabel(upcoming)
+
+            for label in [from_label, date_label]:
+                label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+                label.setStyleSheet(style + "padding: 2px 0px;")
+
+            upcoming_widget = QWidget()
+            upcoming_col = QVBoxLayout()
+            upcoming_col.setSpacing(0)
+            upcoming_col.setContentsMargins(0, 0, 0, 0)
+            upcoming_col.addWidget(from_label)
+            upcoming_col.addWidget(date_label)
+            upcoming_widget.setLayout(upcoming_col)
+            upcoming_widget.setMinimumHeight(65)
+        else:
+            # Data rows get a single centered label
+            upcoming_widget = QLabel(upcoming)
+            upcoming_widget.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            upcoming_widget.setStyleSheet(style)
+
         row_layout = QHBoxLayout()
         row_layout.addWidget(prayer_label, stretch=2)
         row_layout.addWidget(start_label, stretch=1)
         row_layout.addWidget(iqamah_label, stretch=1)
+        row_layout.addWidget(upcoming_widget, stretch=1)
 
         row_widget = QWidget()
         row_widget.setLayout(row_layout)
@@ -170,6 +192,47 @@ class DisplayWindow(QMainWindow):
         """Called every second to update the clock label."""
         now = datetime.now().strftime("%H:%M:%S")
         self.clock_label.setText(now)
+
+    def _build_jumuah_table(self):
+        """
+        Builds a small 2x3 table showing Jumuah khutbah times.
+        Rows: Jumuah label row, Khutbah Time row.
+        Columns: Jumuah, 1st Jamah, 2nd Jamah.
+
+        Returns:
+            QWidget: The Jumuah table widget.
+        """
+        # Hardcoded for now — will come from config later
+        rows = [
+            ["Jumuah", "1st Jamah", "2nd Jamah"],
+            ["Khutbah Time", "13:00", "14:00"],
+        ]
+
+        table_layout = QVBoxLayout()
+        table_layout.setSpacing(8)
+
+        for i, row_data in enumerate(rows):
+            row_layout = QHBoxLayout()
+
+            for cell in row_data:
+                label = QLabel(cell)
+                label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+                label.setStyleSheet(f"""
+                    color: {TEXT_PRIMARY};
+                    font-family: '{get_font_family('ui' if i == 0 else 'numeric')}';
+                    font-size: {'25px' if i == 0 else '25px'};
+                    font-weight: {'bold' if i == 0 else 'normal'};
+                    padding: 8px 0px;
+                """)
+                row_layout.addWidget(label, stretch=1)
+
+            row_widget = QWidget()
+            row_widget.setLayout(row_layout)
+            table_layout.addWidget(row_widget)
+
+        table_widget = QWidget()
+        table_widget.setLayout(table_layout)
+        return table_widget
 
 
 if __name__ == "__main__":

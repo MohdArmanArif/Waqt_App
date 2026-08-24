@@ -106,12 +106,14 @@ def iqamah_calc(db_data):
     db_data[columns] = None
     for index, row in db_data.iterrows():
 
+        # Change maghrib iqamah for each day
+        db_data.at[index, "Maghrib_Iqamah"] = nearest_time(row["Maghrib_Start"], 1, 0)
+
         # Calculate fresh iqamah times on the first row and on every change day
         if index == 0 or row["Weekday"] in change_days:
             db_data.at[index, "Fajr_Iqamah"] = nearest_time(row["Fajr_Start"], 15, 30)
             db_data.at[index, "Dhuhr_Iqamah"] = nearest_time(row["Dhuhr_Start"], 15, 30)
             db_data.at[index, "Asr_Iqamah"] = nearest_time(row["Asr_Start"], 15, 30)
-            db_data.at[index, "Maghrib_Iqamah"] = nearest_time(row["Maghrib_Start"], 15, 30)
             db_data.at[index, "Isha_Iqamah"] = nearest_time(row["Isha_Start"], 15, 30)
 
     # Forward fill — all non-change-day rows inherit the iqamah times

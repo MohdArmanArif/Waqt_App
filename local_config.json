@@ -1,5 +1,6 @@
 {
   "mosque_id": 1,
   "machine_type": "display",
-  "machine_number": 1
+  "machine_number": 1,
+  "db_path": "/Users/arman/Desktop/Waqt_App/sync/prayer_db.xlsx"
 }

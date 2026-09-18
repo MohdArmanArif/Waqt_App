@@ -69,8 +69,8 @@ class DisplayWindow(QMainWindow):
         self.clock_label.setStyleSheet(f"""
             color: {TEXT_PRIMARY};
             font-family: '{get_font_family('numeric')}';
-            font-size: 64px;
-            padding: 20px;
+            font-size: 90px;
+            padding: 30px;
         """)
 
         # ── Prayer times table ────────────────────────────────────────────────────
@@ -133,7 +133,7 @@ class DisplayWindow(QMainWindow):
         Returns:
             QWidget: A single table row widget.
         """
-        font_size = "25px" if is_header else "25px"
+        font_size = "50px" if is_header else "40px"
         font_weight = "bold" if is_header else "normal"
         font_role = "ui" if is_header else "numeric"
 
@@ -142,7 +142,7 @@ class DisplayWindow(QMainWindow):
             font-family: '{get_font_family(font_role)}';
             font-size: {font_size};
             font-weight: {font_weight};
-            padding: 8px 0px;
+            padding: 10px 0px;
         """
 
         prayer_label = QLabel(prayer)
@@ -190,7 +190,7 @@ class DisplayWindow(QMainWindow):
 
     def update_clock(self):
         """Called every second to update the clock label."""
-        now = datetime.now().strftime("%H:%M:%S")
+        now = datetime.now().strftime("%I:%M:%S %p")
         self.clock_label.setText(now)
 
     def _build_jumuah_table(self):
@@ -220,7 +220,7 @@ class DisplayWindow(QMainWindow):
                 label.setStyleSheet(f"""
                     color: {TEXT_PRIMARY};
                     font-family: '{get_font_family('ui' if i == 0 else 'numeric')}';
-                    font-size: {'25px' if i == 0 else '25px'};
+                    font-size: {'50px' if i == 0 else '40px'};
                     font-weight: {'bold' if i == 0 else 'normal'};
                     padding: 8px 0px;
                 """)

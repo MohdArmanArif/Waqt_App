@@ -101,16 +101,21 @@ class DisplayWindow(QMainWindow):
         table_layout.setSpacing(8)
 
         # Build the header — third column shows the date of the next iqamah change
-        next_change_date = self.next_change["Date"] if self.next_change else "--"
+        next_change_date = self.next_change["Date"].strftime("%b %d") if self.next_change else "--"
         header = self._build_row("Prayer", "Start", "Iqamah", next_change_date, is_header=True)
         table_layout.addWidget(header)
 
         for prayer in self.prayers:
-            start = self.prayer_times.get(f"{prayer}_Start", "--:--")
-            iqamah = self.prayer_times.get(f"{prayer}_Iqamah", "--:--")
+            start = self.prayer_times.get(f"{prayer}_Start")
+            iqamah = self.prayer_times.get(f"{prayer}_Iqamah")
 
             # Get the upcoming iqamah time for this prayer, falls back to "--:--" if not found
-            upcoming = self.next_change.get(f"{prayer}_Iqamah", "--:--") if self.next_change else "--:--"
+            upcoming = self.next_change.get(f"{prayer}_Iqamah") if self.next_change else None
+
+            # Format as 12-hour time, fall back to "--:--" if missing
+            start = start.strftime("%I:%M %p") if start else "--:--"
+            iqamah = iqamah.strftime("%I:%M %p") if iqamah else "--:--"
+            upcoming = upcoming.strftime("%I:%M %p") if upcoming else "--:--"
 
             row = self._build_row(prayer, start, iqamah, upcoming)
             table_layout.addWidget(row)
@@ -156,22 +161,10 @@ class DisplayWindow(QMainWindow):
             label.setStyleSheet(style)
 
         if is_header:
-            # Header upcoming column shows "From" on top and the date below
-            from_label = QLabel("From")
-            date_label = QLabel(upcoming)
+            upcoming_widget = QLabel(f"From {upcoming}")
+            upcoming_widget.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            upcoming_widget.setStyleSheet(style)
 
-            for label in [from_label, date_label]:
-                label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-                label.setStyleSheet(style + "padding: 2px 0px;")
-
-            upcoming_widget = QWidget()
-            upcoming_col = QVBoxLayout()
-            upcoming_col.setSpacing(0)
-            upcoming_col.setContentsMargins(0, 0, 0, 0)
-            upcoming_col.addWidget(from_label)
-            upcoming_col.addWidget(date_label)
-            upcoming_widget.setLayout(upcoming_col)
-            upcoming_widget.setMinimumHeight(65)
         else:
             # Data rows get a single centered label
             upcoming_widget = QLabel(upcoming)
@@ -204,8 +197,8 @@ class DisplayWindow(QMainWindow):
         """
         # Hardcoded for now — will come from config later
         rows = [
-            ["Jumuah", "1st Jamah", "2nd Jamah"],
-            ["Khutbah Time", "13:00", "14:00"],
+            ["Jumu'ah", "1st Jama'ah", "2nd Jama'ah"],
+            ["Khutbah Start", "01:00 PM", "02:00 PM"],
         ]
 
         table_layout = QVBoxLayout()

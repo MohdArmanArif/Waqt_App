@@ -5,8 +5,8 @@ from PyQt6.QtWidgets import QApplication
 from db_manager import check_db, DB_PATH
 from display import DisplayWindow
 
-# Get today's date in YYYY-MM-DD format — used to look up the correct row in the database
-TODAY = date.today().strftime("%Y-%m-%d")
+# Get today's date as a datetime.date object
+TODAY = date.today()
 
 
 def get_today_prayer_times():
@@ -16,11 +16,12 @@ def get_today_prayer_times():
     Returns:
         dict: Today's row from the database, or None if not found.
     """
-    # Read the full database — dtype=str keeps all times as plain text
-    db_data = pd.read_excel(DB_PATH, dtype=str)
+    # Read the full database — no dtype=str since we want native datetime types
+    db_data = pd.read_excel(DB_PATH)
 
     # Find the row matching today's date
-    row = db_data[db_data["Date"] == TODAY]
+    # .dt.date strips the time portion from the datetime column for comparison
+    row = db_data[db_data["Date"].dt.date == TODAY]
 
     if row.empty:
         print(f"[main] No data found for today ({TODAY})")
@@ -42,13 +43,13 @@ def get_next_iqamah_change(today):
         dict: The first row with a different iqamah time, or None if no change found.
     """
     # Read the database directly — no need to pass it in from outside
-    db_data = pd.read_excel(DB_PATH, dtype=str)
+    db_data = pd.read_excel(DB_PATH)
 
     # The five iqamah columns we want to compare
     iqamah_columns = ["Fajr_Iqamah", "Dhuhr_Iqamah", "Asr_Iqamah", "Isha_Iqamah"]
 
     # Only look at rows after today
-    future_rows = db_data[db_data["Date"] > TODAY]
+    future_rows = db_data[db_data["Date"].dt.date > TODAY]
 
     for _, row in future_rows.iterrows():
         # Check if any iqamah time in this row differs from today's

@@ -6,62 +6,67 @@ from datetime import datetime, timedelta
 # All other days inherit their iqamah times from the most recent change day via ffill.
 change_days = ["Saturday"]
 
-def time_math(time_str, minutes):
+def time_math(time_obj, minutes):
     """
-    Adds or subtracts minutes from a time string and returns the result.
+    Adds or subtracts minutes from a datetime object and returns the result
+    as a full datetime with the original date preserved.
 
     Pass a positive number to add minutes, or a negative number to subtract.
-    Handles rollover correctly — e.g. '23:50' + 20 minutes becomes '00:10',
-    and '00:10' - 20 minutes becomes '23:50'.
+    Handles rollover correctly — e.g. 23:50 + 20 minutes becomes 00:10.
 
     Args:
-        time_str (str): Time in 'HH:MM' format, e.g. '18:45'.
+        time_obj (Timestamp or datetime): The datetime to adjust.
         minutes (int): Minutes to add (positive) or subtract (negative).
 
     Returns:
-        str: The resulting time in 'HH:MM' format.
+        datetime: The resulting datetime with the original date preserved.
     """
-    # Parse the string into a datetime object — date doesn't matter, only time
-    dt = datetime.strptime(time_str, "%H:%M")
+    # Extract the date to add back after the math
+    original_date = time_obj.date()
 
-    # timedelta handles all the rollover math automatically,
-    # whether minutes is positive or negative
+    # Extract just the time portion for the math
+    time_only = time_obj.time()
+
+    # Combine with the original date so we can use timedelta math on it
+    dt = datetime.combine(original_date, time_only)
+
+    # timedelta handles rollover automatically whether minutes is positive or negative
     new_dt = dt + timedelta(minutes=minutes)
 
-    # Convert back to a string in the same HH:MM format
-    return new_dt.strftime("%H:%M")
+    return new_dt
 
-def interval_round(time, interval):
+def interval_round(time_obj, interval):
     """
-    Rounds a time string UP to the nearest interval in minutes.
+    Rounds a datetime object UP to the nearest interval in minutes,
+    preserving the original date.
 
     Example with interval=15:
-        '13:46' → '14:00'
-        '13:45' → '13:45'  (already on the boundary, stays the same)
-        '23:58' → '00:00'  (correctly rolls over past midnight)
+        datetime(2026, 1, 1, 13, 46) → datetime(2026, 1, 1, 14, 0)
+        datetime(2026, 1, 1, 13, 45) → datetime(2026, 1, 1, 13, 45)
+        datetime(2026, 1, 1, 23, 58) → datetime(2026, 1, 2, 0, 0)
 
     Args:
-        time (str): Time in 'HH:MM' format.
+        time_obj (datetime): The datetime to round up.
         interval (int): The interval to round up to e.g. 5, 10, 15, 30.
 
     Returns:
-        str: The rounded time in 'HH:MM' format.
+        datetime: The rounded datetime with the original date preserved.
     """
+    # Convert to total minutes since midnight for the rounding math
+    total_mins = time_obj.hour * 60 + time_obj.minute
 
-    # Split the time string into hours and minutes
-    hours, mins = time.split(":")
-    total_mins = int(hours) * 60 + int(mins)
-
-    # math.ceil always rounds up — even 13:46 with interval 15 rounds to 14:00,
-    # not back down to 13:45
+    # math.ceil always rounds up
     intervals_rounded = math.ceil(total_mins / interval)
     rounded_mins = (intervals_rounded * interval) % (24 * 60)
 
-    # Convert total minutes back into hours and minutes
-    hours = rounded_mins // 60
-    mins = rounded_mins % 60
+    # Check if rounding pushed past midnight — add a day if so
+    extra_days = (intervals_rounded * interval) // (24 * 60)
 
-    return f"{hours:02d}:{mins:02d}"
+    # Build the result with the original date plus any overflow days
+    return datetime.combine(
+        time_obj.date() + timedelta(days=extra_days),
+        datetime.min.time().replace(hour=rounded_mins // 60, minute=rounded_mins % 60)
+    )
 
 def nearest_time(waqt, interval, min_offset):
     """
@@ -122,4 +127,5 @@ def iqamah_calc(db_data):
     return db_data
 
 if __name__ == "__main__":
-    print(nearest_time("18:31", 15, 15))
+    from datetime import time
+    print(nearest_time(time(18, 31), 15, 15))

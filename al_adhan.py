@@ -23,7 +23,7 @@ def parse_year(data):
 
             # Convert date from DD-MM-YYYY to YYYY-MM-DD
             raw_date = day['date']['gregorian']['date']
-            date = datetime.strptime(raw_date, "%d-%m-%Y").strftime("%Y-%m-%d")
+            date = datetime.strptime(raw_date, "%d-%m-%Y").date()
 
             # Build Hijri date string e.g. '12 Rajab 1447'
             hijri = day['date']['hijri']
@@ -33,14 +33,14 @@ def parse_year(data):
             timings = day['timings']
 
             days_parsed.append({
-                "Date":         date,
-                "Weekday":      day['date']['gregorian']['weekday']['en'],
-                "Fajr_Start":   timings['Fajr'].split()[0],
-                "Sunrise":      timings['Sunrise'].split()[0],
-                "Dhuhr_Start":  timings['Dhuhr'].split()[0],
-                "Asr_Start":    timings['Asr'].split()[0],
-                "Maghrib_Start": timings['Maghrib'].split()[0],
-                "Isha_Start":   timings['Isha'].split()[0],
+                "Date": date,
+                "Weekday": day['date']['gregorian']['weekday']['en'],
+                "Fajr_Start": datetime.combine(date, datetime.strptime(timings['Fajr'].split()[0], "%H:%M").time()),
+                "Sunrise": datetime.combine(date, datetime.strptime(timings['Sunrise'].split()[0], "%H:%M").time()),
+                "Dhuhr_Start": datetime.combine(date, datetime.strptime(timings['Dhuhr'].split()[0], "%H:%M").time()),
+                "Asr_Start": datetime.combine(date, datetime.strptime(timings['Asr'].split()[0], "%H:%M").time()),
+                "Maghrib_Start": datetime.combine(date, datetime.strptime(timings['Maghrib'].split()[0], "%H:%M").time()),
+                "Isha_Start": datetime.combine(date, datetime.strptime(timings['Isha'].split()[0], "%H:%M").time()),
             })
 
     return days_parsed
@@ -62,7 +62,7 @@ def get_yearly_start_time(year):
         params={
             "latitude": "43.6532",
             "longitude": "-79.3832",
-            "method": 2,
+            "method": 15,
             "school": 0,
             # "tune": config["tune"],           # minute offsets per prayer
             # "midnightMode": config["midnight_mode"],  # midnight calculation method

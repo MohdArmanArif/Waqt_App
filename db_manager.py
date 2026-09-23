@@ -60,7 +60,7 @@ def check_db():
         df.to_excel(DB_PATH, index=False)
 
     # Read the existing database
-    db_data = pd.read_excel(DB_PATH, dtype=str)
+    db_data = pd.read_excel(DB_PATH)
 
     if db_data.empty:
         # Database exists but has no data — fetch last year, this year, and next year
@@ -68,18 +68,16 @@ def check_db():
         full_df = pd.concat([yearly_time_df(current_year - 1),
                              yearly_time_df(current_year),
                              yearly_time_df(current_year + 1)], ignore_index=True)
-        full_df.to_excel(DB_PATH, index=False)
-        calc_iqamah(pd.read_excel(DB_PATH, dtype=str))
+        calc_iqamah(full_df)
 
-    elif db_data.iloc[-1, 0].split("-")[0] != str(current_year + 1):
+    elif db_data.iloc[-1, 0].year == current_year:
         # The last row in the database belongs to the current year,
         # meaning next year's data hasn't been loaded yet — add it now
         print("[db_manager] Next year data missing, adding")
         outdated_year = current_year - 2
-        full_df = pd.concat([db_data[~db_data["Date"].str.startswith(str(outdated_year))],
+        full_df = pd.concat([db_data[db_data["Date"].dt.year > outdated_year],
                              yearly_time_df(current_year + 1)], ignore_index=True)
-        full_df.to_excel(DB_PATH, index=False)
-        calc_iqamah(pd.read_excel(DB_PATH, dtype=str))
+        calc_iqamah(full_df)
 
     print("[db_manager] Database up to date")
     return

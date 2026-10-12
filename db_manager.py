@@ -68,35 +68,64 @@ def check_db():
         full_df = pd.concat([yearly_time_df(current_year - 1),
                              yearly_time_df(current_year),
                              yearly_time_df(current_year + 1)], ignore_index=True)
-        calc_iqamah(full_df)
+        calc_iqamah(full_df, full_df=full_df)
 
     elif db_data.iloc[-1, 0].year == current_year:
         # The last row in the database belongs to the current year,
         # meaning next year's data hasn't been loaded yet — add it now
         print("[db_manager] Next year data missing, adding")
         outdated_year = current_year - 2
-        full_df = pd.concat([db_data[db_data["Date"].dt.year > outdated_year],
-                             yearly_time_df(current_year + 1)], ignore_index=True)
-        calc_iqamah(full_df)
+        new_df = yearly_time_df(current_year + 1)
+        full_df = pd.concat([db_data[db_data["Date"].dt.year > outdated_year], new_df], ignore_index=True)
+        calc_iqamah(new_df, first_index=0, full_df=full_df)
 
     print("[db_manager] Database up to date")
     return
 
 
-def calc_iqamah(db_data):
+def calc_iqamah(db_data, first_index=1, full_df=None):
     """
-    Runs the iqamah calculator over the provided DataFrame and writes
-    the results back to the Excel file.
+    Runs the iqamah calculator over the provided subset DataFrame and merges
+    the results back into the correct rows of the full database before saving.
+
+    If full_df is provided, uses it directly — avoiding a disk read.
+    If full_df is not provided, reads the full database from disk.
 
     Args:
-        db_data (DataFrame): The full prayer times database, freshly read
-                             from Excel and passed in by the caller to avoid
-                             reading the file twice.
+        db_data (DataFrame): A subset of the prayer times database to
+                             recalculate iqamah for. Can be the full
+                             database or just a portion (e.g. one year).
+        first_index (int): Passed to iqamah_calc — controls whether the
+                           first row is treated as a change day.
+        full_df (DataFrame, optional): The full database in memory. Pass this
+                                       in to avoid reading from disk when the
+                                       full DataFrame is already available.
     """
 
-    db_data = iqamah_calc(db_data)
-    db_data.to_excel(DB_PATH, index=False)
-    print("[db_manager] Iqamah times calculated and added to database")
+    # Run the iqamah calculator over the subset
+    updated_subset = iqamah_calc(db_data, first_index)
+
+    # Read the full database so we can merge the updated subset back in
+    if full_df is None:
+        full_df = pd.read_excel(DB_PATH)
+
+    # Set Date as the index on both so .update() knows which rows to match
+    full_df = full_df.set_index("Date")
+    updated_subset = updated_subset.set_index("Date")
+
+    # Update in place — only rows whose Date exists in updated_subset are changed,
+    # all other rows in full_df are left completely untouched
+    full_df.update(updated_subset)
+
+    # Restore Date as a regular column and save
+    full_df = full_df.reset_index()
+
+    # Forward fill — all non-change-day rows inherit the iqamah times
+    # from the most recent Saturday (or first row)
+    full_df = full_df.ffill()
+
+    full_df.to_excel(DB_PATH, index=False)
+    print("[db_manager] Iqamah times calculated and saved")
 
 
 if __name__ == "__main__":

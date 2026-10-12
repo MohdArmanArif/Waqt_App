@@ -77,29 +77,31 @@ def nearest_time(waqt, interval, min_offset):
         06:25 + 30 min = 06:55 → round up to nearest 15 → 07:00
 
     Args:
-        waqt (str): Prayer start time in 'HH:MM' format.
+        waqt (datetime): Prayer start time as a datetime object.
         interval (int): The rounding interval in minutes e.g. 15.
         min_offset (int): Minutes to add before rounding.
 
     Returns:
-        str: The calculated iqamah time in 'HH:MM' format.
+        datetime: The calculated iqamah time as a datetime object.
     """
 
     iqamah_time = interval_round(time_math(waqt, min_offset), interval)
     return iqamah_time
 
-def iqamah_calc(db_data):
+def iqamah_calc(db_data, first_index):
     """
-    Calculates iqamah times for the entire database and returns the updated DataFrame.
+    Calculates iqamah times for a DataFrame of prayer times and returns the updated DataFrame.
 
     Strategy:
     - Clear all existing iqamah values first to avoid stale data
-    - On the first row and every change_day (e.g. Saturday), calculate fresh iqamah times
+    - On the first row (when first_index=1) and every change_day (e.g. Saturday), calculate fresh iqamah times
     - Forward fill all other rows — they inherit the iqamah times from the previous change day
       This means iqamah times stay stable throughout the week and only change on Saturdays
 
     Args:
-        db_data (DataFrame): The full prayer times database.
+        db_data (DataFrame): A DataFrame of prayer times — can be the full database or a subset.
+        first_index (int): If 1, treats the first row as a change day and calculates iqamah for it.
+                           If 0, skips the first row unless it falls on a change day.
 
     Returns:
         DataFrame: The same DataFrame with iqamah columns populated.
@@ -115,15 +117,12 @@ def iqamah_calc(db_data):
         db_data.at[index, "Maghrib_Iqamah"] = nearest_time(row["Maghrib_Start"], 1, 0)
 
         # Calculate fresh iqamah times on the first row and on every change day
-        if index == 0 or row["Weekday"] in change_days:
+        if (index == 0 and first_index == 1) or row["Weekday"] in change_days:
             db_data.at[index, "Fajr_Iqamah"] = nearest_time(row["Fajr_Start"], 15, 30)
             db_data.at[index, "Dhuhr_Iqamah"] = nearest_time(row["Dhuhr_Start"], 15, 30)
             db_data.at[index, "Asr_Iqamah"] = nearest_time(row["Asr_Start"], 15, 30)
             db_data.at[index, "Isha_Iqamah"] = nearest_time(row["Isha_Start"], 15, 30)
 
-    # Forward fill — all non-change-day rows inherit the iqamah times
-    # from the most recent Saturday (or first row)
-    db_data[columns] = db_data[columns].ffill()
     return db_data
 
 if __name__ == "__main__":
